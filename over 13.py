@@ -46,7 +46,7 @@ def train_model():
     df.dropna(inplace=True)
     # print(len(df))
     # print(df)
-    df['ou'] = np.where((df['score1'] > 4) & (df['score2'] > 4), 1, 0)
+    df['ou'] = np.where(df['score1'] + df['score2'] > 13, 1, 0)
     df.drop(['date','team1', 'team2', 'score1', 'score2'], axis=1, inplace=True)
     print(df)
     # df.drop(['score1','score2', 'total',  'elo_prob1', 'elo_prob2', ], axis=1, inplace=True)
@@ -106,7 +106,7 @@ def train_model():
     print(pd.crosstab(y_test, preds, rownames=['Actual Result'], colnames=['Predicted Result']))
     print(list(zip(X_train, rf.feature_importances_)))
     #
-    # dump(rf, 'both over 4 baseball.joblib')
+    # dump(rf, 'over 13 baseball.joblib')
     #
     #
 
@@ -114,7 +114,7 @@ def train_model():
 # PREDICT
 def predict():
     df = pd.read_csv('https://projects.fivethirtyeight.com/mlb-api/mlb_elo_latest.csv')
-    df = df[(df['date'] >= '2022-06-07') & (df['date'] < '2022-06-08')].copy()
+    df = df[(df['date'] >= '2022-06-11') & (df['date'] < '2022-06-12')].copy()
     # print(len(df))
     df.drop([ 'elo_prob1', 'elo_prob2', 'season', 'neutral', 'playoff', 'elo1_post', 'elo2_post', 'pitcher1', 'pitcher2', 'rating1_post', 'rating2_post', 'score1','score2'], axis=1, inplace=True)
     # df.dropna(inplace=True)
@@ -134,11 +134,11 @@ def predict():
     # print(df)
     # print(df.columns)
     # print(df.isnull().sum())
-    model = load('both over 4 baseball.joblib')
+    model = load('over 13 baseball.joblib')
     results = model.predict(df)
 
     original['Model results'] = results.tolist()
-    original['Model results'] = np.where(original['Model results'] == 1, 'Both Over 4', 'Both Under 4')
+    original['Model results'] = np.where(original['Model results'] == 1, 'Over 13', 'Under')
 
     original['team1'] = np.where(original['team1'] == 'ARI', 'DiamondBacks', original['team1'])
     original['team1'] = np.where(original['team1'] == 'LAD', 'Dodgers', original['team1'])
@@ -208,8 +208,12 @@ def predict():
     original.drop(['elo1_pre', 'elo2_pre', 'rating1_pre', 'rating2_pre', 'pitcher1_rgs',
                    'pitcher2_rgs', 'pitcher1_adj', 'pitcher2_adj', 'rating_prob1',
                    'rating_prob2'], axis=1, inplace=True)
-    # print(original.loc[original['Model results'] == 'Over 11'])
-    print(original)
+    # print(original.loc[original['Model results'] == 'Over 13'])
+
+    result = original.loc[original['Model results'] == 'Over 13'].copy()
+    result.reset_index(inplace=True)
+    result.drop(['index'], axis=1, inplace=True)
+    print(result)
 
 
 
