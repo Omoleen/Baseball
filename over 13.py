@@ -11,36 +11,39 @@ from joblib import dump, load
 from imblearn.over_sampling import SMOTE
 from sklearn.model_selection import train_test_split
 
+
+def evaluate_model(model, x_test, y_test):
+    from sklearn import metrics
+
+    # Predict Test Data
+    y_pred = model.predict(x_test)
+
+    # predict probabilistic
+    # y_pred = model.predict(x_test)
+
+    # Calculate accuracy, precision, recall, f1-score, and kappa score
+    acc = metrics.accuracy_score(y_test, y_pred)
+    prec = metrics.precision_score(y_test, y_pred)
+    rec = metrics.recall_score(y_test, y_pred)
+    f1 = metrics.f1_score(y_test, y_pred)
+    kappa = metrics.cohen_kappa_score(y_test, y_pred)
+    clas = metrics.classification_report(y_test, y_pred)
+
+    # Calculate area under curve (AUC)
+    y_pred_proba = model.predict_proba(x_test)[::,1]
+    fpr, tpr, _ = metrics.roc_curve(y_test, y_pred_proba)
+    auc = metrics.roc_auc_score(y_test, y_pred_proba)
+
+    # Display confussion matrix
+    cm = metrics.confusion_matrix(y_test, y_pred)
+
+    return {'acc': acc, 'prec': prec, 'rec': rec, 'f1': f1, 'kappa': kappa,
+            'fpr': fpr, 'tpr': tpr, 'auc': auc, 'cm': cm, 'clas': clas}
+
+
 def train_model():
-    def evaluate_model(model, x_test, y_test):
-        from sklearn import metrics
-
-        # Predict Test Data
-        y_pred = model.predict(x_test)
-
-        # Calculate accuracy, precision, recall, f1-score, and kappa score
-        acc = metrics.accuracy_score(y_test, y_pred)
-        prec = metrics.precision_score(y_test, y_pred)
-        rec = metrics.recall_score(y_test, y_pred)
-        f1 = metrics.f1_score(y_test, y_pred)
-        kappa = metrics.cohen_kappa_score(y_test, y_pred)
-        clas = metrics.classification_report(y_test, y_pred)
-
-        # Calculate area under curve (AUC)
-        y_pred_proba = model.predict_proba(x_test)[::,1]
-        fpr, tpr, _ = metrics.roc_curve(y_test, y_pred_proba)
-        auc = metrics.roc_auc_score(y_test, y_pred_proba)
-
-        # Display confussion matrix
-        cm = metrics.confusion_matrix(y_test, y_pred)
-
-        return {'acc': acc, 'prec': prec, 'rec': rec, 'f1': f1, 'kappa': kappa,
-                'fpr': fpr, 'tpr': tpr, 'auc': auc, 'cm': cm, 'clas': clas}
-
-
-
-
     df = pd.read_csv('https://projects.fivethirtyeight.com/mlb-api/mlb_elo_latest.csv')
+    df = df[(df['date'] < '2022-06-11')].copy()
     # print(len(df))
     df.drop([ 'season', 'neutral', 'playoff', 'elo1_post', 'elo2_post', 'pitcher1', 'pitcher2', 'rating1_post', 'rating2_post', 'elo_prob1', 'elo_prob2',], axis=1, inplace=True)
     df.dropna(inplace=True)
@@ -86,6 +89,11 @@ def train_model():
     rf = RandomForestClassifier(random_state=0)
     rf.fit(X_train, y_train)
 
+    # # PREDICT WITH PROBABILITY
+    # model = load('over 13 baseball.joblib')
+    # # Evaluate Loaded Model
+    # rf_eval = evaluate_model(model, X_test, y_test)
+
 
     # Evaluate Model
     rf_eval = evaluate_model(rf, X_test, y_test)
@@ -114,7 +122,7 @@ def train_model():
 # PREDICT
 def predict():
     df = pd.read_csv('https://projects.fivethirtyeight.com/mlb-api/mlb_elo_latest.csv')
-    df = df[(df['date'] >= '2022-06-11') & (df['date'] < '2022-06-12')].copy()
+    df = df[(df['date'] >= '2022-06-14') & (df['date'] < '2022-06-23')].copy()
     # print(len(df))
     df.drop([ 'elo_prob1', 'elo_prob2', 'season', 'neutral', 'playoff', 'elo1_post', 'elo2_post', 'pitcher1', 'pitcher2', 'rating1_post', 'rating2_post', 'score1','score2'], axis=1, inplace=True)
     # df.dropna(inplace=True)

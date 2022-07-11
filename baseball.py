@@ -9,6 +9,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from joblib import dump, load
 from imblearn.over_sampling import SMOTE
+from imblearn.combine import SMOTEENN, SMOTETomek
 from sklearn.model_selection import train_test_split
 
 
@@ -25,7 +26,7 @@ def scrape_data():
         completed = soup.findAll('tr', class_='tr')
         # ebayproducts = soup.findAll('div', class_='s-item__wrapper clearfix')
         # print(len(completed))
-        count = 0  #it is used to scrape the las x number of matches
+        count = 0  #it is used to scrape the last x number of matches
         for game in completed:
             # if count == 4:
             #     break
@@ -92,30 +93,30 @@ def evaluate_model(model, x_test, y_test):
 def build_model():
     df = pd.read_csv('baseball.csv')
     # print(df.describe())
+    X = df.drop(["ou"], axis=1)
+    Y = df["ou"]
+    X_train, X_test, y_train, y_test = train_test_split(X, Y,
+                                                        shuffle=True,
+                                                        test_size=0.2,
+                                                        random_state=1)
     # standard scaler
     df_ready = df.copy()
     scaler = StandardScaler()
-    num_cols = ['rating', 'pitcher', 'travel', 'adj_rating', 'win_prob']
-    df_ready[num_cols] = scaler.fit_transform(df[num_cols])
+    X_train = scaler.fit_transform(X_train)
+    X_test = scaler.transform(X_test)
     # print(df_ready)
-    print(df_ready.groupby("ou").size())  # print number of dead or alive
-    df_ready['ou'].value_counts()
+    print(X_train.groupby("ou").size())  # print number of dead or alive
+    # df_ready['ou'].value_counts()
     print(df_ready.isnull().sum())
     # upsampling data
-    # using Synthetic Minority Oversampling Technique to upsample
-    X_train_smote = df_ready.drop(["ou"], axis=1)
-    Y_train_smote = df_ready["ou"]
-    # print(X_train_smote.shape, Y_train_smote.shape)
-    sm = SMOTE(random_state=2)
-    X_train_res, Y_train_res = sm.fit_resample(X_train_smote, Y_train_smote.ravel())
-    print(X_train_res.shape, Y_train_res.shape)
-    print(len(Y_train_res[Y_train_res == 0]), len(Y_train_res[Y_train_res == 1]))
-    print(X_train_res)  # dataset
-    print(Y_train_res)  # over or under
-    X_train, X_test, y_train, y_test = train_test_split(X_train_res, Y_train_res,
-                                                        shuffle=True,
-                                                        test_size=0.1,
-                                                        random_state=1)
+    # using Synthetic Minority Oversampling Technique to upsample and downsample
+    sm = SMOTEENN(random_state=2)
+    X_train, y_train = sm.fit_resample(X_train, y_train.ravel())
+    print(X_train.shape, y_train.shape)
+    print(len(y_train[y_train == 0]), len(y_train[y_train == 1]))
+    print(X_train)  # dataset
+    print(y_train)  # over or under
+
 
     # Show the Training and Testing Data
     print('Shape of training feature:', X_train.shape)
